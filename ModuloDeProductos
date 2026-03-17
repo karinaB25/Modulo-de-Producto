@@ -1,0 +1,91 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
+// 1. Modelos de datos (Records)
+record Producto(String codigo, String descripcion, String categoria, double precioUnitario) {}
+
+record LineaPedido(Producto producto, int cantidad) {
+    public double subtotal() {
+        return producto.precioUnitario() * cantidad;
+    }
+}
+
+// 2. Clase Pedido con Lógica Funcional
+class Pedido {
+    private final String folio;
+    private final List<LineaPedido> lineas = new ArrayList<>();
+
+    public Pedido(String folio) { this.folio = folio; }
+
+    public void agregarLinea(Producto p, int cant) {
+        lineas.add(new LineaPedido(p, cant));
+    }
+
+    // Método de orden superior que acepta una Función
+    public double calcularTotal(Function<LineaPedido, Double> operacion) {
+        return lineas.stream()
+                     .map(operacion)
+                     .reduce(0.0, Double::sum);
+    }
+
+    public String getFolio() { return folio; }
+}
+
+// 3. CLASE PRINCIPAL (Debe llamarse igual que tu archivo .java)
+public class ModuloDeProductos { 
+    public static void main(String[] args) {
+        
+        // --- Datos de Prueba (8 productos) ---
+        Producto p1 = new Producto("L01", "Leche", "Lácteos", 20.0);
+        Producto p2 = new Producto("L02", "Queso", "Lácteos", 50.0);
+        Producto p3 = new Producto("B01", "Agua", "Bebidas", 10.0);
+        Producto p4 = new Producto("B02", "Jugo", "Bebidas", 15.0);
+        Producto p5 = new Producto("A01", "Arroz", "Abarrotes", 25.0);
+        Producto p6 = new Producto("A02", "Frijol", "Abarrotes", 30.0);
+        Producto p7 = new Producto("X01", "Cloro", "Limpieza", 18.0);
+        Producto p8 = new Producto("X02", "Jabón", "Limpieza", 12.0);
+
+        // --- Funciones Lambda ---
+        
+        // Total Bruto: Precio * Cantidad
+        Function<LineaPedido, Double> brutoFn = LineaPedido::subtotal;
+
+        // Total Neto: 
+        // Regla 1: 15% desc en Lácteos. 
+        // Regla 2: 10% desc si compras más de 5 unidades de cualquier cosa.
+        Function<LineaPedido, Double> netoFn = linea -> {
+            double base = linea.subtotal();
+            double desc = 0;
+            if (linea.producto().categoria().equals("Lácteos")) desc += base * 0.15;
+            if (linea.cantidad() > 5) desc += base * 0.10;
+            return base - desc;
+        };
+
+        // --- Generar 3 Pedidos ---
+        List<Pedido> pedidos = new ArrayList<>();
+
+        Pedido ped1 = new Pedido("PED-001");
+        ped1.agregarLinea(p1, 2); // Leche
+        ped1.agregarLinea(p5, 1); // Arroz
+        pedidos.add(ped1);
+
+        Pedido ped2 = new Pedido("PED-002");
+        ped2.agregarLinea(p3, 10); // Agua (Volumen > 5)
+        ped2.agregarLinea(p7, 2);  // Cloro
+        pedidos.add(ped2);
+
+        Pedido ped3 = new Pedido("PED-003");
+        ped3.agregarLinea(p2, 6);  // Queso (Lácteo + Volumen)
+        pedidos.add(ped3);
+
+        // --- Impresión de Resultados ---
+        System.out.println("======= REPORTE DE TIENDA =======");
+        pedidos.forEach(p -> {
+            System.out.println("Folio: " + p.getFolio());
+            System.out.printf("  > Total Bruto: $%.2f%n", p.calcularTotal(brutoFn));
+            System.out.printf("  > Total Neto:  $%.2f%n", p.calcularTotal(netoFn));
+            System.out.println("---------------------------------");
+        });
+    }
+}
