@@ -32,7 +32,7 @@ class Pedido {
     public String getFolio() { return folio; }
 }
 
-// 3. CLASE PRINCIPAL (Debe llamarse igual que tu archivo .java)
+// 3. CLASE PRINCIPAL 
 public class ModuloDeProductos { 
     public static void main(String[] args) {
         
